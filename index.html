@@ -47,6 +47,11 @@ body{background:var(--panel);color:var(--ink);font-family:var(--f-body);font-siz
 .hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);max-width:calc(100% - 32px);box-sizing:border-box;background:rgba(255,255,255,.88);border:1px solid var(--line);border-radius:999px;padding:7px 16px;font-size:13.5px;color:var(--ink);pointer-events:none;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .toast{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);text-align:center}
 .toast a{color:#bcd6ff}
+.zoom{position:absolute;left:12px;bottom:12px;display:flex;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.zoom button{min-width:44px;height:40px;border:0;background:transparent;color:var(--ink);font:600 18px var(--f-body);cursor:pointer}
+.zoom button#z-reset{font-size:13px;min-width:58px;border-left:1px solid var(--line);border-right:1px solid var(--line);font-variant-numeric:tabular-nums}
+.zoom button:hover{background:#eaf0f7}
+.zoom button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .sig{position:fixed;right:calc(12px + env(safe-area-inset-right,0px));bottom:calc(8px + env(safe-area-inset-bottom,0px));font:600 12px var(--f-display);color:var(--ink);opacity:.45;pointer-events:none;z-index:50}
 @media (max-width:720px){
   .app{flex-direction:column}
@@ -102,12 +107,17 @@ body{background:var(--panel);color:var(--ink);font-family:var(--f-body);font-siz
     <canvas id="cv"></canvas>
     <div class="hint" id="hint"></div>
     <div class="toast" id="toast" hidden></div>
+    <div class="zoom" role="group" aria-label="Yakınlaştırma">
+      <button id="z-out" aria-label="Uzaklaştır">−</button>
+      <button id="z-reset" aria-label="Görünümü sıfırla">100%</button>
+      <button id="z-in" aria-label="Yakınlaştır">+</button>
+    </div>
   </main>
 </div>
 <div class="sig">Made by Us</div>
 
 <script>
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 const PAGES_URL = 'https://ekerem.github.io/aci-atolyesi/';
 document.getElementById('ver').textContent = 'Sürüm ' + APP_VERSION;
 
@@ -125,6 +135,7 @@ let shapes = [];          // {type:'ray'|'seg'|'line', a:pt, b:pt}
 let letterIdx = 0;
 let showDeg = true;
 const prot = { on:false, x:0, y:0, r:170, rot:0 };
+const view = { s:1, ox:0, oy:0 };   // ekran = dünya * s + o
 let drag = null, hover = null, history = [];
 const LETTERS = 'ABCDEFGHKLMNPRSTUVYZ';
 const PALETTE = ['#e4572e','#2f6fd0','#14a37f','#e89a0c','#8e44ad','#d81b60','#0e8fa3','#7a8c1c','#c0581f','#5b5fc7'];
@@ -132,7 +143,7 @@ const HINTS = {
   ray:  'Işın: başlangıç noktasından basılı tutup sürükleyin.',
   seg:  'Doğru parçası: bir uçtan diğer uca sürükleyin.',
   line: 'Doğru: iki noktası arasında sürükleyin, iki yönde sonsuza uzar.',
-  move: 'Taşı: noktayı tutup şekli değiştirin, çizgiyi tutup kaydırın.',
+  move: 'Taşı: noktayı ya da çizgiyi sürükleyin; boş alanı sürükleyince sayfa kayar.',
   del:  'Sil: silmek istediğiniz çizgiye dokunun.',
   perp: 'Dikme: önce bir çizgiye dokunun, sonra dikmenin çıkacağı noktaya dokunun.',
   par:  'Paralel: önce bir çizgiye dokunun, sonra paralelinin geçeceği yere dokunun.',
@@ -321,10 +332,11 @@ function strokeShape(s, color, w, ext, dash){
 }
 
 function drawGrid(){
-  ctx.fillStyle = '#e3eaf2'; ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = '#d3dde8'; ctx.lineWidth = 1; ctx.beginPath();
-  for (let x = 20.5; x < W; x += 40) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
-  for (let y = 20.5; y < H; y += 40) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  const x0 = -view.ox / view.s, y0 = -view.oy / view.s, x1 = (W - view.ox) / view.s, y1 = (H - view.oy) / view.s;
+  ctx.fillStyle = '#e3eaf2'; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.strokeStyle = '#d3dde8'; ctx.lineWidth = 1 / view.s; ctx.beginPath();
+  for (let x = Math.floor((x0 - 20) / 40) * 40 + 20; x < x1; x += 40) { ctx.moveTo(x, y0); ctx.lineTo(x, y1); }
+  for (let y = Math.floor((y0 - 20) / 40) * 40 + 20; y < y1; y += 40) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }
   ctx.stroke();
 }
 function drawAngles(angles){
@@ -363,7 +375,7 @@ function drawPoint(p, hl){
   ctx.fillStyle = '#24324a'; ctx.fillText(p.name, p.x + 9, p.y - 9);
 }
 function draw(){
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.setTransform(DPR * view.s, 0, 0, DPR * view.s, DPR * view.ox, DPR * view.oy);
   drawGrid();
   const { angles } = computeAngles();
   drawAngles(angles);
@@ -377,7 +389,7 @@ function draw(){
   if (drag && drag.kind === 'draw') strokeShape({ type:drag.type, a:drag.a, b:drag.b }, 'rgba(47,111,208,0.85)', 2.6);
   const gp = drag && drag.kind === 'place' ? drag.at : ghostAt;
   if (refShape && gp) {
-    const g = buildRel(refShape, gp, 11);
+    const g = buildRel(refShape, gp, 11 / view.s);
     strokeShape(g, 'rgba(47,111,208,0.9)', 2.6, null, true);
     if (g.type === 'seg' && tool === 'perp') { // dik açı işareti
       const u1 = sub(g.a, g.b), L1 = Math.hypot(u1.x, u1.y) || 1, d = sub(refShape.b, refShape.a), L2 = Math.hypot(d.x, d.y) || 1, s = 14;
@@ -400,7 +412,35 @@ function draw(){
 }
 
 /* ---------- İşaretçi olayları ---------- */
-function pos(e){ const r = cv.getBoundingClientRect(); return { x:e.clientX - r.left, y:e.clientY - r.top }; }
+function spos(e){ const r = cv.getBoundingClientRect(); return { x:e.clientX - r.left, y:e.clientY - r.top }; }
+function pos(e){ const q = spos(e); return { x:(q.x - view.ox) / view.s, y:(q.y - view.oy) / view.s }; }
+
+/* ---------- Yakınlaştırma ---------- */
+const zLabel = document.getElementById('z-reset');
+function zoomAt(mx, my, f){
+  const ns = Math.max(0.4, Math.min(4, view.s * f)), k = ns / view.s;
+  view.ox = mx - (mx - view.ox) * k; view.oy = my - (my - view.oy) * k; view.s = ns;
+  zLabel.textContent = Math.round(ns * 100) + '%'; draw();
+}
+cv.addEventListener('wheel', e => {
+  e.preventDefault(); const q = spos(e);
+  zoomAt(q.x, q.y, Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)));
+}, { passive:false });
+document.getElementById('z-in').addEventListener('click', () => zoomAt(W / 2, H / 2, 1.25));
+document.getElementById('z-out').addEventListener('click', () => zoomAt(W / 2, H / 2, 0.8));
+zLabel.addEventListener('click', () => { view.s = 1; view.ox = 0; view.oy = 0; zLabel.textContent = '100%'; draw(); });
+const touches = new Map(); let pinch = null;
+function startPinch(){
+  const [a, b] = [...touches.values()];
+  pinch = { d0:Math.max(10, dist(a, b)), m0:{ x:(a.x + b.x) / 2, y:(a.y + b.y) / 2 }, s0:view.s, ox0:view.ox, oy0:view.oy };
+}
+function doPinch(){
+  const [a, b] = [...touches.values()], m = { x:(a.x + b.x) / 2, y:(a.y + b.y) / 2 };
+  const ns = Math.max(0.4, Math.min(4, pinch.s0 * dist(a, b) / pinch.d0));
+  const wx = (pinch.m0.x - pinch.ox0) / pinch.s0, wy = (pinch.m0.y - pinch.oy0) / pinch.s0;
+  view.s = ns; view.ox = m.x - wx * ns; view.oy = m.y - wy * ns;
+  zLabel.textContent = Math.round(ns * 100) + '%'; draw();
+}
 function hitPoint(p, r){ let best = null, bd = r; for (const q of allPoints()) { const d = dist(p, q); if (d < bd) { bd = d; best = q; } } return best; }
 function hitShape(p, r){ const ext = extents(); let best = null, bd = r; for (let i = shapes.length - 1; i >= 0; i--) { const [P, Q] = visEnds(shapes[i], ext); const d = segDist(p, P, Q); if (d < bd) { bd = d; best = shapes[i]; } } return best; }
 /* Seçili çizgiye göre paralel ya da dikme oluştur */
@@ -415,9 +455,12 @@ function buildRel(ref, p, r){
 }
 
 cv.addEventListener('pointerdown', e => {
-  if (drag) return;
-  const p = pos(e), r = e.pointerType === 'mouse' ? 11 : 20;
-  cv.setPointerCapture(e.pointerId);
+  touches.set(e.pointerId, spos(e));
+  try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+  if (touches.size === 2) { drag = null; ghostAt = null; startPinch(); draw(); return; }
+  if (touches.size > 2 || drag) return;
+  if (e.button === 1) { e.preventDefault(); drag = { kind:'pan', last:spos(e) }; return; }
+  const p = pos(e), r = (e.pointerType === 'mouse' ? 11 : 20) / view.s;
   const h = hitProtHandle(p, r);
   if (h) { drag = { kind:'prot-' + h, off:{ x:prot.x - p.x, y:prot.y - p.y } }; return; }
   if (tool === 'move') {
@@ -426,7 +469,7 @@ cv.addEventListener('pointerdown', e => {
     const s = hitShape(p, r);
     if (s) { pushHist(); drag = { kind:'shape', s, last:p }; return; }
     if (inProt(p)) { drag = { kind:'prot-move', off:{ x:prot.x - p.x, y:prot.y - p.y } }; return; }
-    return;
+    drag = { kind:'pan', last:spos(e) }; cv.style.cursor = 'grabbing'; return;
   }
   if (tool === 'par' || tool === 'perp') {
     if (!refShape) { const s = hitShape(p, r); if (s) { refShape = s; hintEl.textContent = HINTS.place; draw(); } return; }
@@ -443,7 +486,10 @@ cv.addEventListener('pointerdown', e => {
 });
 
 cv.addEventListener('pointermove', e => {
-  const p = pos(e), r = e.pointerType === 'mouse' ? 11 : 20;
+  if (touches.has(e.pointerId)) touches.set(e.pointerId, spos(e));
+  if (pinch) { if (touches.size >= 2) doPinch(); return; }
+  if (drag && drag.kind === 'pan') { const q = spos(e); view.ox += q.x - drag.last.x; view.oy += q.y - drag.last.y; drag.last = q; draw(); return; }
+  const p = pos(e), r = (e.pointerType === 'mouse' ? 11 : 20) / view.s;
   if (!drag) {
     if (e.pointerType !== 'mouse') return;
     if (refShape) { ghostAt = p; cv.style.cursor = 'crosshair'; draw(); return; }
@@ -473,7 +519,7 @@ cv.addEventListener('pointermove', e => {
     drag.last = p;
   } else if (drag.kind === 'prot-move') {
     const c = { x:p.x + drag.off.x, y:p.y + drag.off.y };
-    let best = null, bd = 14;
+    let best = null, bd = 14 / view.s;
     for (const q of [...allPoints(), ...computeAngles().clusters]) { const d = dist(c, q); if (d < bd) { bd = d; best = q; } }
     prot.x = best ? best.x : c.x; prot.y = best ? best.y : c.y;
   } else if (drag.kind === 'prot-rot') {
@@ -485,7 +531,7 @@ cv.addEventListener('pointermove', e => {
     for (const c of cands) { let df = Math.atan2(Math.sin(a - c), Math.cos(a - c)); if (Math.abs(df) < tol) { a = c; break; } }
     prot.rot = a;
   } else if (drag.kind === 'prot-size') {
-    prot.r = Math.max(90, Math.min(Math.min(W, H) * 0.9, dist(p, prot) - 22));
+    prot.r = Math.max(90, Math.min(Math.min(W, H) * 0.9 / view.s, dist(p, prot) - 22));
   }
   draw();
 });
@@ -500,7 +546,7 @@ function endDrag(e){
       shapes.push({ type:drag.type, a, b });
     }
   } else if (drag.kind === 'place') {
-    const g = buildRel(refShape, drag.at, e && e.pointerType === 'mouse' ? 11 : 20);
+    const g = buildRel(refShape, drag.at, (e && e.pointerType === 'mouse' ? 11 : 20) / view.s);
     if (dist(g.a, g.b) > 4) {
       pushHist();
       const a = g.aPt || newPoint(g.a.x, g.a.y), b = g.bPt && g.bPt !== a ? g.bPt : newPoint(g.b.x, g.b.y);
@@ -515,8 +561,15 @@ function endDrag(e){
   }
   drag = null; draw();
 }
-cv.addEventListener('pointerup', endDrag);
-cv.addEventListener('pointercancel', endDrag);
+function onUp(e){
+  touches.delete(e.pointerId);
+  if (pinch) { if (touches.size < 2) pinch = null; return; }
+  if (drag && drag.kind === 'pan') { drag = null; cv.style.cursor = tool === 'move' ? 'default' : cv.style.cursor; return; }
+  endDrag(e);
+}
+cv.addEventListener('pointerup', onUp);
+cv.addEventListener('pointercancel', onUp);
+cv.addEventListener('auxclick', e => e.preventDefault());
 cv.addEventListener('pointerleave', e => { if (!drag && (hover || ghostAt)) { hover = null; ghostAt = null; draw(); } });
 
 /* ---------- Menü ---------- */
@@ -551,7 +604,7 @@ degBtn.addEventListener('click', () => {
 const protBtn = document.getElementById('b-prot');
 protBtn.addEventListener('click', () => {
   prot.on = !prot.on;
-  if (prot.on && !prot.placed) { prot.x = W / 2; prot.y = H * 0.68; prot.r = Math.max(110, Math.min(190, Math.min(W, H) * 0.32)); prot.rot = 0; prot.placed = true; }
+  if (prot.on && !prot.placed) { prot.x = (W / 2 - view.ox) / view.s; prot.y = (H * 0.68 - view.oy) / view.s; prot.r = Math.max(110, Math.min(190, Math.min(W, H) * 0.32)) / view.s; prot.rot = 0; prot.placed = true; }
   protBtn.classList.toggle('on', prot.on); setTool(tool);
 });
 

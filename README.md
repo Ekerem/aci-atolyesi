@@ -11,6 +11,7 @@
 - **Saydam açıölçer**: ✥ ile taşınır, ⇔ ile büyütülür/küçültülür, ⟳ ile döndürülür. Merkezi noktalara, tabanı çizgilere yapışır.
   Açıölçerin merkezinden başlayan çizimler tam derece ile çizilir (canlı derece göstergesi).
 - **Taşı**: noktayı sürükleyerek açıyı değiştirin, çizgiyi sürükleyerek kaydırın. **Sil**, **Geri Al**, **Temizle**.
+- **Yakınlaştırma**: fare tekerleği, iki parmakla sıkıştırma ya da sol alttaki −, 100%, + düğmeleri. Taşı modunda boş alanı sürükleyince (veya iki parmakla) sayfa kayar.
 - 🔄 **Güncelle** butonu, sağ altta "Made by Us" imzası, çevrimdışı çalışma (`sw.js`).
 
 ## Bağlantılar
