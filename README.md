@@ -4,7 +4,8 @@
 (MAT.5.3.1, MAT.5.3.3, MAT.5.3.4).
 
 ## Ne yapar?
-- **Işın, doğru parçası, doğru** çizilir; uç noktalar otomatik harflendirilir (A, B, C…).
+- **Işın, doğru parçası, doğru** çizilir; ışın ve doğruların sonsuzluğu uçlarındaki okla gösterilir. Uç noktalar otomatik harflendirilir (A, B, C…).
+- **Dikme ve Paralel**: önce bir çizgiye, sonra yerleştirilecek noktaya dokunulur; dikme ya da paralel otomatik çizilir.
 - Kesişen çizgiler arasındaki **açılar otomatik gösterilir**; **eş açılar aynı renktedir**, dik açılar kare işaretlidir.
 - **Dereceleri Gizle**: renkler kalır, sayılar gizlenir; öğrenciler açıölçerle kendileri ölçer.
 - **Saydam açıölçer**: ✥ ile taşınır, ⇔ ile büyütülür/küçültülür, ⟳ ile döndürülür. Merkezi noktalara, tabanı çizgilere yapışır.
