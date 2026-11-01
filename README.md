@@ -21,7 +21,7 @@
 ## Kurulum
 1. `ekerem` geçen yerleri (index.html, version.json, capacitor.config.json, README.md) GitHub kullanıcı adınızla değiştirin.
 2. Depoyu `aci-atolyesi` adıyla oluşturup dosyaları `main` dalına gönderin. Settings → Pages → Source: **GitHub Actions**.
-3. APK için `v1.0.0` etiketiyle release oluşturun; APK iş akışı derleyip release'e ekler.
+3. APK, `version.json` içindeki sürüm değişip `main` dalına gönderildiğinde otomatik derlenir ve o sürümün release kaydına eklenir.
 
 ## Yeni sürüm
-`index.html` içindeki `APP_VERSION` ve `version.json` birlikte artırılır, yeni etiket (`v1.0.1`) ile release açılır.
+`index.html` içindeki `APP_VERSION` ve `version.json` birlikte artırılıp `main` dalına gönderilir; etiket ve release otomatik oluşur.
