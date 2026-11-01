@@ -1,0 +1,10 @@
+{
+  "appId": "com.madebyus.aciatolyesi",
+  "appName": "Açı Atölyesi",
+  "webDir": "www",
+  "server": {
+    "url": "https://ekerem.github.io/aci-atolyesi/",
+    "errorPath": "index.html",
+    "cleartext": false
+  }
+}

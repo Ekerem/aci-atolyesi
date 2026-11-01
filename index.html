@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Açı Atölyesi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Lexend:wght@400;500;600&display=swap">
+<style>
+/* Düzen: solda sade araç menüsü, sağda kareli gri-mavi çizim düzlemi. Tek, açık sınıf teması. */
+:root{
+  --board:#e3eaf2;      /* çizim düzlemi: hafif gri-mavi */
+  --grid:#d3dde8;
+  --panel:#f7f9fc;
+  --ink:#24324a;        /* çizgiler ve yazı */
+  --muted:#6a7891;
+  --accent:#2f6fd0;     /* seçili araç, açıölçer */
+  --accent-soft:#dde8f8;
+  --danger:#d2483a;
+  --line:#cfd8e4;
+  --f-display:"Fredoka","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"Lexend","Segoe UI",system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%;margin:0}
+body{background:var(--panel);color:var(--ink);font-family:var(--f-body);font-size:14px;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.app{display:flex;height:100%;
+  padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);box-sizing:border-box}
+.side{width:212px;flex:none;display:flex;flex-direction:column;gap:14px;padding:16px 12px;box-sizing:border-box;border-right:1px solid var(--line);background:var(--panel);overflow-y:auto}
+.brand{font-family:var(--f-display);font-weight:600;font-size:22px;line-height:1.1;padding:2px 6px 4px;display:flex;align-items:center;gap:8px}
+.brand svg{flex:none}
+.grp{display:flex;flex-direction:column;gap:6px}
+.grp h2{margin:0;padding:0 6px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.btn{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:8px 10px;border:1.5px solid transparent;border-radius:10px;background:transparent;color:var(--ink);font:500 15px var(--f-body);text-align:left;cursor:pointer}
+.btn svg{flex:none;width:26px;height:26px}
+.btn:hover{background:#eaf0f7}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.on{background:var(--accent-soft);border-color:var(--accent);color:#16407f}
+.btn.warn{color:var(--danger)}
+.btn.armed{background:#fbe3df;border-color:var(--danger)}
+.sp{flex:1}
+.ver{font-size:11px;color:var(--muted);padding:0 8px}
+.stage{position:relative;flex:1;min-width:0;background:var(--board)}
+#cv{position:absolute;inset:0;touch-action:none;display:block}
+.hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);max-width:calc(100% - 32px);box-sizing:border-box;background:rgba(255,255,255,.88);border:1px solid var(--line);border-radius:999px;padding:7px 16px;font-size:13.5px;color:var(--ink);pointer-events:none;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toast{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);text-align:center}
+.toast a{color:#bcd6ff}
+.sig{position:fixed;right:calc(12px + env(safe-area-inset-right,0px));bottom:calc(8px + env(safe-area-inset-bottom,0px));font:600 12px var(--f-display);color:var(--ink);opacity:.45;pointer-events:none;z-index:50}
+@media (max-width:720px){
+  .app{flex-direction:column}
+  .side{width:auto;flex-direction:row;align-items:center;gap:6px;padding:8px max(12px,env(safe-area-inset-left,0px));border-right:0;border-bottom:1px solid var(--line);overflow-x:auto;overflow-y:hidden}
+  .brand,.grp h2,.sp,.ver{display:none}
+  .grp{flex-direction:row;gap:4px;padding-right:6px;border-right:1px solid var(--line)}
+  .grp:last-of-type{border-right:0}
+  .btn{width:auto;white-space:nowrap;min-height:42px;padding:6px 10px;font-size:13.5px}
+  .btn svg{width:22px;height:22px}
+  .hint{white-space:normal;border-radius:12px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="side" aria-label="Araçlar">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path d="M4 25 L27 25" stroke="#24324a" stroke-width="2.6" stroke-linecap="round"/><path d="M4 25 L22 6" stroke="#24324a" stroke-width="2.6" stroke-linecap="round"/><path d="M13 25 A9 9 0 0 0 10.2 18.4" fill="none" stroke="#e4572e" stroke-width="2.6"/><circle cx="4" cy="25" r="2.6" fill="#2f6fd0"/></svg>
+      Açı Atölyesi
+    </div>
+
+    <div class="grp">
+      <h2>Çiz</h2>
+      <button class="btn" id="t-ray" data-tool="ray"><svg viewBox="0 0 26 26"><circle cx="4" cy="20" r="2.6" fill="currentColor"/><path d="M4 20 L23 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M23 6 l-6.2 .8 M23 6 l-2.6 5.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Işın</button>
+      <button class="btn" id="t-seg" data-tool="seg"><svg viewBox="0 0 26 26"><path d="M4 20 L22 6" stroke="currentColor" stroke-width="2.2"/><circle cx="4" cy="20" r="2.6" fill="currentColor"/><circle cx="22" cy="6" r="2.6" fill="currentColor"/></svg>Doğru Parçası</button>
+      <button class="btn" id="t-line" data-tool="line"><svg viewBox="0 0 26 26"><path d="M3 21 L23 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M23 5 l-6.2 .8 M23 5 l-2.6 5.6 M3 21 l6.2 -.8 M3 21 l2.6 -5.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="9.5" cy="15.8" r="2.2" fill="currentColor"/><circle cx="16.5" cy="10.2" r="2.2" fill="currentColor"/></svg>Doğru</button>
+    </div>
+
+    <div class="grp">
+      <h2>Düzenle</h2>
+      <button class="btn" id="t-move" data-tool="move"><svg viewBox="0 0 26 26"><path d="M13 3 v20 M3 13 h20 M13 3 l-3 3 M13 3 l3 3 M13 23 l-3 -3 M13 23 l3 -3 M3 13 l3 -3 M3 13 l3 3 M23 13 l-3 -3 M23 13 l-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>Taşı</button>
+      <button class="btn" id="t-del" data-tool="del"><svg viewBox="0 0 26 26"><path d="M5 8 h16 M10 8 V5 h6 v3 M7 8 l1.2 14 h9.6 L19 8" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/></svg>Sil</button>
+      <button class="btn" id="b-undo"><svg viewBox="0 0 26 26"><path d="M9 6 L4 11 L9 16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 11 h11 a6 6 0 0 1 0 12 h-4" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>Geri Al</button>
+      <button class="btn warn" id="b-clear"><svg viewBox="0 0 26 26"><path d="M6 6 L20 20 M20 6 L6 20" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><span>Temizle</span></button>
+    </div>
+
+    <div class="grp">
+      <h2>Göster</h2>
+      <button class="btn" id="b-deg"><svg viewBox="0 0 26 26"><path d="M2.5 13 C6 7 20 7 23.5 13 C20 19 6 19 2.5 13 Z" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="13" cy="13" r="3.4" fill="currentColor"/><path id="deg-slash" d="M4 22 L22 4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity="0"/></svg><span>Dereceleri Gizle</span></button>
+      <button class="btn" id="b-prot"><svg viewBox="0 0 26 26"><path d="M2 20 A11 11 0 0 1 24 20 Z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/><path d="M13 20 V12 M6 13.5 l1.6 1.4 M20 13.5 l-1.6 1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="13" cy="20" r="1.6" fill="currentColor"/></svg><span>Açıölçer</span></button>
+    </div>
+
+    <div class="sp"></div>
+    <div class="grp">
+      <button class="btn" id="b-update"><span style="font-size:20px;width:26px;text-align:center">🔄</span>Güncelle</button>
+      <div class="ver" id="ver"></div>
+    </div>
+  </nav>
+
+  <main class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="hint" id="hint"></div>
+    <div class="toast" id="toast" hidden></div>
+  </main>
+</div>
+<div class="sig">Made by Us</div>
+
+<script>
+const APP_VERSION = '1.0.0';
+const PAGES_URL = 'https://ekerem.github.io/aci-atolyesi/';
+document.getElementById('ver').textContent = 'Sürüm ' + APP_VERSION;
+
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r){ r = Math.min(r, w / 2, h / 2);
+    this.moveTo(x + r, y); this.arcTo(x + w, y, x + w, y + h, r); this.arcTo(x + w, y + h, x, y + h, r);
+    this.arcTo(x, y + h, x, y, r); this.arcTo(x, y, x + w, y, r); this.closePath(); };
+}
+/* ---------- Durum ---------- */
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const stage = document.getElementById('stage');
+let W = 0, H = 0, DPR = 1;
+let tool = 'ray';
+let shapes = [];          // {type:'ray'|'seg'|'line', a:pt, b:pt}
+let letterIdx = 0;
+let showDeg = true;
+const prot = { on:false, x:0, y:0, r:170, rot:0 };
+let drag = null, hover = null, history = [];
+const LETTERS = 'ABCDEFGHKLMNPRSTUVYZ';
+const PALETTE = ['#e4572e','#2f6fd0','#14a37f','#e89a0c','#8e44ad','#d81b60','#0e8fa3','#7a8c1c','#c0581f','#5b5fc7'];
+const HINTS = {
+  ray:  'Işın: başlangıç noktasından basılı tutup sürükleyin.',
+  seg:  'Doğru parçası: bir uçtan diğer uca sürükleyin.',
+  line: 'Doğru: iki noktası arasında sürükleyin, iki yönde sonsuza uzar.',
+  move: 'Taşı: noktayı tutup şekli değiştirin, çizgiyi tutup kaydırın.',
+  del:  'Sil: silmek istediğiniz çizgiye dokunun.'
+};
+
+function newPoint(x, y){ const i = letterIdx++; const n = LETTERS[i % LETTERS.length] + (i >= LETTERS.length ? Math.floor(i / LETTERS.length) : ''); return { x, y, name:n }; }
+
+/* ---------- Geri al ---------- */
+function snapshot(){
+  const pts = [], idx = new Map();
+  for (const s of shapes) for (const p of [s.a, s.b]) if (!idx.has(p)) { idx.set(p, pts.length); pts.push({x:p.x, y:p.y, name:p.name}); }
+  return JSON.stringify({ pts, sh: shapes.map(s => [s.type, idx.get(s.a), idx.get(s.b)]), letterIdx });
+}
+function pushHist(){ history.push(snapshot()); if (history.length > 60) history.shift(); }
+function undo(){
+  if (!history.length) return;
+  const d = JSON.parse(history.pop());
+  const pts = d.pts.map(p => ({...p}));
+  shapes = d.sh.map(([type, a, b]) => ({ type, a:pts[a], b:pts[b] }));
+  letterIdx = d.letterIdx; draw();
+}
+
+/* ---------- Geometri ---------- */
+const sub = (p, q) => ({ x:p.x - q.x, y:p.y - q.y });
+const cross = (p, q) => p.x * q.y - p.y * q.x;
+const dot = (p, q) => p.x * q.x + p.y * q.y;
+const dist = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
+
+function tRange(s){ const L = dist(s.a, s.b) || 1, e = 1.5 / L;
+  return s.type === 'seg' ? [-e, 1 + e] : s.type === 'ray' ? [-e, Infinity] : [-Infinity, Infinity]; }
+function distToShape(p, s){
+  const d = sub(s.b, s.a), L2 = dot(d, d) || 1;
+  let t = dot(sub(p, s.a), d) / L2;
+  if (s.type === 'seg') t = Math.max(0, Math.min(1, t)); else if (s.type === 'ray') t = Math.max(0, t);
+  return dist(p, { x:s.a.x + d.x * t, y:s.a.y + d.y * t });
+}
+function intersect(s1, s2){
+  const d1 = sub(s1.b, s1.a), d2 = sub(s2.b, s2.a), den = cross(d1, d2);
+  if (Math.abs(den) < 1e-6 * Math.hypot(d1.x, d1.y) * Math.hypot(d2.x, d2.y)) return null;
+  const w = sub(s2.a, s1.a), t = cross(w, d2) / den, u = cross(w, d1) / den;
+  const r1 = tRange(s1), r2 = tRange(s2);
+  if (t < r1[0] || t > r1[1] || u < r2[0] || u > r2[1]) return null;
+  return { x:s1.a.x + d1.x * t, y:s1.a.y + d1.y * t };
+}
+
+/* Kesişim noktalarını ve oluşan açıları hesapla */
+function computeAngles(){
+  const clusters = [];
+  for (let i = 0; i < shapes.length; i++) for (let j = i + 1; j < shapes.length; j++) {
+    const p = intersect(shapes[i], shapes[j]); if (!p) continue;
+    if (!clusters.some(c => dist(c, p) < 3)) clusters.push(p);
+  }
+  const angles = [];
+  for (const P of clusters) {
+    const rays = [];
+    for (const s of shapes) {
+      if (distToShape(P, s) > 2.5) continue;
+      const d = sub(s.b, s.a), L = Math.hypot(d.x, d.y); if (L < 1) continue;
+      const ux = d.x / L, uy = d.y / L, fromA = dot(sub(P, s.a), d) / L;
+      const fwd = s.type !== 'seg' || L - fromA > 2;
+      const back = s.type === 'line' || fromA > 2;
+      if (fwd) rays.push({ ang:Math.atan2(uy, ux), s });
+      if (back) rays.push({ ang:Math.atan2(-uy, -ux), s });
+    }
+    if (rays.length < 2) continue;
+    rays.sort((a, b) => a.ang - b.ang);
+    for (let i = 0; i < rays.length; i++) {
+      const c = rays[i], n = rays[(i + 1) % rays.length];
+      let diff = n.ang - c.ang; if (i === rays.length - 1) diff += 2 * Math.PI;
+      if (c.s === n.s || diff < 0.01 || diff > Math.PI - 0.004) continue;
+      angles.push({ x:P.x, y:P.y, start:c.ang, diff, deg:Math.round(diff * 180 / Math.PI) });
+    }
+  }
+  const vals = [...new Set(angles.map(a => a.deg))].sort((a, b) => a - b);
+  for (const a of angles) a.color = PALETTE[vals.indexOf(a.deg) % PALETTE.length];
+  return { angles, clusters };
+}
+
+/* ---------- Açıölçer ---------- */
+function toProt(p){ const dx = p.x - prot.x, dy = p.y - prot.y, c = Math.cos(-prot.rot), s = Math.sin(-prot.rot); return { x:dx * c - dy * s, y:dx * s + dy * c }; }
+function fromProt(l){ const c = Math.cos(prot.rot), s = Math.sin(prot.rot); return { x:prot.x + l.x * c - l.y * s, y:prot.y + l.x * s + l.y * c }; }
+const protHandles = () => ({ rot:{ x:0, y:-prot.r - 26 }, size:{ x:prot.r + 22, y:0 }, move:{ x:0, y:28 } });
+
+function drawProtractor(){
+  const R = prot.r, H2 = protHandles();
+  ctx.save(); ctx.translate(prot.x, prot.y); ctx.rotate(prot.rot);
+  ctx.beginPath(); ctx.moveTo(-R - 6, 0); ctx.arc(0, 0, R, Math.PI, 0, false); ctx.lineTo(R + 6, 0); ctx.closePath();
+  ctx.fillStyle = 'rgba(214,232,255,0.38)'; ctx.fill();
+  ctx.lineWidth = 1.6; ctx.strokeStyle = 'rgba(30,90,170,0.95)'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, R * 0.42, Math.PI, 0, false); ctx.strokeStyle = 'rgba(30,90,170,0.45)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.strokeStyle = 'rgba(25,70,140,0.9)';
+  for (let d = 0; d <= 180; d++) {
+    const a = d * Math.PI / 180, cx = Math.cos(a), cy = -Math.sin(a);
+    const len = d % 10 === 0 ? R * 0.1 : d % 5 === 0 ? R * 0.065 : R * 0.035;
+    ctx.lineWidth = d % 10 === 0 ? 1.4 : 0.8;
+    ctx.beginPath(); ctx.moveTo(cx * R, cy * R); ctx.lineTo(cx * (R - len), cy * (R - len)); ctx.stroke();
+    if (d % 10 === 0) { ctx.beginPath(); ctx.moveTo(cx * R * 0.42, cy * R * 0.42); ctx.lineTo(cx * R * 0.36, cy * R * 0.36); ctx.stroke(); }
+  }
+  const fs = Math.max(9, R * 0.062);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (let d = 0; d <= 180; d += 10) {
+    const a = d * Math.PI / 180, cx = Math.cos(a), cy = -Math.sin(a);
+    const r1 = R - R * 0.1 - fs * 0.85, r2 = r1 - fs * 1.25;
+    ctx.save(); ctx.translate(cx * r1, cy * r1); ctx.rotate(Math.PI / 2 - a);
+    ctx.font = `600 ${fs}px Lexend, system-ui, sans-serif`; ctx.fillStyle = 'rgba(20,60,130,0.95)'; ctx.fillText(String(d), 0, 0); ctx.restore();
+    ctx.save(); ctx.translate(cx * r2, cy * r2); ctx.rotate(Math.PI / 2 - a);
+    ctx.font = `500 ${fs * 0.85}px Lexend, system-ui, sans-serif`; ctx.fillStyle = 'rgba(200,70,40,0.9)'; ctx.fillText(String(180 - d), 0, 0); ctx.restore();
+  }
+  // merkez
+  ctx.strokeStyle = 'rgba(25,70,140,1)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(0, 0); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fillStyle = '#2f6fd0'; ctx.fill();
+  // tutamaçlar
+  const handle = (h, sym) => {
+    ctx.beginPath(); ctx.arc(h.x, h.y, 14, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#2f6fd0'; ctx.stroke();
+    ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(-prot.rot);
+    ctx.fillStyle = '#2f6fd0'; ctx.font = '600 15px system-ui, sans-serif'; ctx.fillText(sym, 0, 1); ctx.restore();
+  };
+  handle(H2.rot, '⟳'); handle(H2.size, '⇔'); handle(H2.move, '✥');
+  ctx.restore();
+}
+function hitProtHandle(p, r){ if (!prot.on) return null; const l = toProt(p), h = protHandles();
+  for (const k of ['rot', 'size', 'move']) if (dist(l, h[k]) < r + 4) return k; return null; }
+function inProt(p){ if (!prot.on) return false; const l = toProt(p); return l.y <= 6 && Math.hypot(l.x, l.y) <= prot.r + 6; }
+
+/* ---------- Yakalama (snap) ---------- */
+function allPoints(){ const s = new Set(); for (const sh of shapes) { s.add(sh.a); s.add(sh.b); } return [...s]; }
+function snap(p, r, except){
+  let best = null, bd = r;
+  for (const q of allPoints()) { if (q === except) continue; const d = dist(p, q); if (d < bd) { bd = d; best = { x:q.x, y:q.y, pt:q }; } }
+  if (best) return best;
+  for (const c of computeAngles().clusters) { const d = dist(p, c); if (d < bd) { bd = d; best = { x:c.x, y:c.y }; } }
+  if (prot.on) { const d = dist(p, prot); if (d < bd) best = { x:prot.x, y:prot.y, center:true }; }
+  return best || { x:p.x, y:p.y };
+}
+/* Açıölçer merkezinden çizilen ışını tam dereceye yerleştir */
+function protDegreeSnap(a, p){
+  if (!prot.on || dist(a, prot) > 0.5) return null;
+  const l = toProt(p), L = Math.hypot(l.x, l.y); if (L < 4) return null;
+  let deg = Math.round(Math.atan2(-l.y, l.x) * 180 / Math.PI);
+  const rad = deg * Math.PI / 180, q = fromProt({ x:L * Math.cos(rad), y:-L * Math.sin(rad) });
+  if (deg < 0) deg += 360;
+  return { x:q.x, y:q.y, deg };
+}
+
+/* ---------- Çizim ---------- */
+function shapeEnds(s){
+  const d = sub(s.b, s.a), L = Math.hypot(d.x, d.y) || 1, ux = d.x / L, uy = d.y / L, F = (W + H) * 2;
+  if (s.type === 'seg') return [s.a, s.b];
+  if (s.type === 'ray') return [s.a, { x:s.a.x + ux * F, y:s.a.y + uy * F }];
+  return [{ x:s.a.x - ux * F, y:s.a.y - uy * F }, { x:s.a.x + ux * F, y:s.a.y + uy * F }];
+}
+function strokeShape(s, color, w){ const [p, q] = shapeEnds(s); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.stroke(); }
+
+function drawGrid(){
+  ctx.fillStyle = '#e3eaf2'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#d3dde8'; ctx.lineWidth = 1; ctx.beginPath();
+  for (let x = 20.5; x < W; x += 40) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+  for (let y = 20.5; y < H; y += 40) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  ctx.stroke();
+}
+function drawAngles(angles){
+  for (const a of angles) {
+    const u1 = { x:Math.cos(a.start), y:Math.sin(a.start) }, e = a.start + a.diff, u2 = { x:Math.cos(e), y:Math.sin(e) };
+    const r = Math.min(70, Math.max(28, 16 / a.diff));
+    ctx.beginPath();
+    if (a.deg === 90) {
+      const s = 18;
+      ctx.moveTo(a.x, a.y); ctx.lineTo(a.x + u1.x * s, a.y + u1.y * s); ctx.lineTo(a.x + (u1.x + u2.x) * s, a.y + (u1.y + u2.y) * s); ctx.lineTo(a.x + u2.x * s, a.y + u2.y * s); ctx.closePath();
+    } else { ctx.moveTo(a.x, a.y); ctx.arc(a.x, a.y, r, a.start, e, false); ctx.closePath(); }
+    ctx.fillStyle = a.color + '3a'; ctx.fill();
+    ctx.beginPath();
+    if (a.deg === 90) { const s = 18; ctx.moveTo(a.x + u1.x * s, a.y + u1.y * s); ctx.lineTo(a.x + (u1.x + u2.x) * s, a.y + (u1.y + u2.y) * s); ctx.lineTo(a.x + u2.x * s, a.y + u2.y * s); }
+    else ctx.arc(a.x, a.y, r, a.start, e, false);
+    ctx.strokeStyle = a.color; ctx.lineWidth = 2.6; ctx.stroke();
+    a.lr = r + 20;
+  }
+}
+function drawLabels(angles){
+  if (!showDeg) return;
+  ctx.font = '600 14px Lexend, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const a of angles) {
+    const m = a.start + a.diff / 2, x = a.x + Math.cos(m) * a.lr, y = a.y + Math.sin(m) * a.lr;
+    const t = a.deg + '°', w = ctx.measureText(t).width + 12;
+    ctx.beginPath(); ctx.roundRect(x - w / 2, y - 11, w, 22, 11); ctx.fillStyle = 'rgba(255,255,255,0.93)'; ctx.fill();
+    ctx.lineWidth = 1.8; ctx.strokeStyle = a.color; ctx.stroke();
+    ctx.fillStyle = a.color; ctx.fillText(t, x, y + 0.5);
+  }
+}
+function drawPoint(p, hl){
+  ctx.beginPath(); ctx.arc(p.x, p.y, hl ? 7.5 : 5.5, 0, Math.PI * 2); ctx.fillStyle = hl ? '#2f6fd0' : '#fff'; ctx.fill();
+  ctx.lineWidth = 2.2; ctx.strokeStyle = '#24324a'; ctx.stroke();
+  ctx.font = '600 15px Fredoka, Lexend, system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(227,234,242,0.95)'; ctx.strokeText(p.name, p.x + 9, p.y - 9);
+  ctx.fillStyle = '#24324a'; ctx.fillText(p.name, p.x + 9, p.y - 9);
+}
+function draw(){
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  drawGrid();
+  const { angles } = computeAngles();
+  drawAngles(angles);
+  for (const s of shapes) {
+    let c = '#24324a', w = 2.6;
+    if (hover && hover.shape === s) { if (tool === 'del') { c = '#d2483a'; w = 4.5; } else w = 4; }
+    strokeShape(s, c, w);
+  }
+  if (drag && drag.kind === 'draw') strokeShape({ type:drag.type, a:drag.a, b:drag.b }, 'rgba(47,111,208,0.85)', 2.6);
+  const hp = hover && hover.pt;
+  for (const p of allPoints()) drawPoint(p, p === hp);
+  if (drag && drag.kind === 'draw') { if (!drag.aExisting) drawPoint({ ...drag.a, name:'' }); }
+  drawLabels(angles);
+  if (prot.on) drawProtractor();
+  if (drag && drag.kind === 'draw' && drag.liveDeg != null) {
+    const t = drag.liveDeg + '°'; ctx.font = '600 15px Lexend, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const w = ctx.measureText(t).width + 16, x = drag.b.x + 26, y = drag.b.y - 24;
+    ctx.beginPath(); ctx.roundRect(x - w / 2, y - 13, w, 26, 13); ctx.fillStyle = '#2f6fd0'; ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillText(t, x, y + 0.5);
+  }
+}
+
+/* ---------- İşaretçi olayları ---------- */
+function pos(e){ const r = cv.getBoundingClientRect(); return { x:e.clientX - r.left, y:e.clientY - r.top }; }
+function hitPoint(p, r){ let best = null, bd = r; for (const q of allPoints()) { const d = dist(p, q); if (d < bd) { bd = d; best = q; } } return best; }
+function hitShape(p, r){ let best = null, bd = r; for (let i = shapes.length - 1; i >= 0; i--) { const d = distToShape(p, shapes[i]); if (d < bd) { bd = d; best = shapes[i]; } } return best; }
+
+cv.addEventListener('pointerdown', e => {
+  if (drag) return;
+  const p = pos(e), r = e.pointerType === 'mouse' ? 11 : 20;
+  cv.setPointerCapture(e.pointerId);
+  const h = hitProtHandle(p, r);
+  if (h) { drag = { kind:'prot-' + h, off:{ x:prot.x - p.x, y:prot.y - p.y } }; return; }
+  if (tool === 'move') {
+    const q = hitPoint(p, r);
+    if (q) { pushHist(); drag = { kind:'pt', pt:q }; return; }
+    const s = hitShape(p, r);
+    if (s) { pushHist(); drag = { kind:'shape', s, last:p }; return; }
+    if (inProt(p)) { drag = { kind:'prot-move', off:{ x:prot.x - p.x, y:prot.y - p.y } }; return; }
+    return;
+  }
+  if (tool === 'del') {
+    const s = hitShape(p, r);
+    if (s) { pushHist(); shapes = shapes.filter(x => x !== s); hover = null; draw(); }
+    return;
+  }
+  const sp = snap(p, r);
+  drag = { kind:'draw', type:tool, a:sp.pt || { x:sp.x, y:sp.y }, aExisting:!!sp.pt, b:{ x:p.x, y:p.y }, liveDeg:null };
+  draw();
+});
+
+cv.addEventListener('pointermove', e => {
+  const p = pos(e), r = e.pointerType === 'mouse' ? 11 : 20;
+  if (!drag) {
+    if (e.pointerType !== 'mouse') return;
+    const h = hitProtHandle(p, r);
+    let nh = null;
+    if (!h && (tool === 'move' || tool === 'del')) {
+      const q = tool === 'move' ? hitPoint(p, r) : null;
+      nh = q ? { pt:q } : (hitShape(p, r) ? { shape:hitShape(p, r) } : null);
+    }
+    cv.style.cursor = h ? (h === 'rot' ? 'grab' : h === 'size' ? 'ew-resize' : 'move')
+      : tool === 'move' ? (nh ? 'grab' : inProt(p) ? 'move' : 'default') : tool === 'del' ? (nh ? 'pointer' : 'default') : 'crosshair';
+    const key = o => o ? (o.pt || o.shape) : null;
+    if (key(nh) !== key(hover)) { hover = nh; draw(); }
+    return;
+  }
+  if (drag.kind === 'draw') {
+    const pd = protDegreeSnap(drag.a, p);
+    if (pd) { drag.b = { x:pd.x, y:pd.y }; drag.liveDeg = pd.deg; }
+    else { const sp = snap(p, r, drag.a); drag.b = { x:sp.x, y:sp.y }; drag.bPt = sp.pt || null; drag.liveDeg = null; }
+    if (pd) drag.bPt = null;
+  } else if (drag.kind === 'pt') {
+    const sp = snap(p, r, drag.pt); drag.pt.x = sp.x; drag.pt.y = sp.y;
+  } else if (drag.kind === 'shape') {
+    const dx = p.x - drag.last.x, dy = p.y - drag.last.y;
+    for (const q of new Set([drag.s.a, drag.s.b])) { q.x += dx; q.y += dy; }
+    drag.last = p;
+  } else if (drag.kind === 'prot-move') {
+    const c = { x:p.x + drag.off.x, y:p.y + drag.off.y };
+    let best = null, bd = 14;
+    for (const q of [...allPoints(), ...computeAngles().clusters]) { const d = dist(c, q); if (d < bd) { bd = d; best = q; } }
+    prot.x = best ? best.x : c.x; prot.y = best ? best.y : c.y;
+  } else if (drag.kind === 'prot-rot') {
+    let a = Math.atan2(p.y - prot.y, p.x - prot.x) + Math.PI / 2;
+    const cands = [];
+    for (let k = 0; k < 24; k++) cands.push(k * Math.PI / 12);
+    for (const s of shapes) if (distToShape(prot, s) < 1.5) { const d = sub(s.b, s.a), t = Math.atan2(d.y, d.x); cands.push(t, t + Math.PI); }
+    const tol = 3 * Math.PI / 180;
+    for (const c of cands) { let df = Math.atan2(Math.sin(a - c), Math.cos(a - c)); if (Math.abs(df) < tol) { a = c; break; } }
+    prot.rot = a;
+  } else if (drag.kind === 'prot-size') {
+    prot.r = Math.max(90, Math.min(Math.min(W, H) * 0.9, dist(p, prot) - 22));
+  }
+  draw();
+});
+
+function endDrag(e){
+  if (!drag) return;
+  if (drag.kind === 'draw') {
+    if (dist(drag.a, drag.b) > 14) {
+      pushHist();
+      const a = drag.aExisting ? drag.a : newPoint(drag.a.x, drag.a.y);
+      let b = drag.bPt && drag.bPt !== a ? drag.bPt : newPoint(drag.b.x, drag.b.y);
+      shapes.push({ type:drag.type, a, b });
+    }
+  } else if (drag.kind === 'pt') {
+    // nokta başka bir noktanın üzerine bırakıldıysa birleştir
+    const t = allPoints().find(q => q !== drag.pt && dist(q, drag.pt) < 1);
+    if (t) for (const s of shapes) { if (s.a === drag.pt) s.a = t; if (s.b === drag.pt) s.b = t; }
+    shapes = shapes.filter(s => s.a !== s.b);
+  }
+  drag = null; draw();
+}
+cv.addEventListener('pointerup', endDrag);
+cv.addEventListener('pointercancel', endDrag);
+cv.addEventListener('pointerleave', e => { if (!drag && hover) { hover = null; draw(); } });
+
+/* ---------- Menü ---------- */
+const hintEl = document.getElementById('hint');
+function setTool(t){
+  tool = t; hover = null;
+  document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
+  hintEl.textContent = HINTS[t] + (prot.on && ['ray','seg','line'].includes(t) ? ' Açıölçerin merkezinden başlarsanız tam derece ile çizilir.' : '');
+  cv.style.cursor = ['ray','seg','line'].includes(t) ? 'crosshair' : 'default';
+  draw();
+}
+document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+document.getElementById('b-undo').addEventListener('click', undo);
+
+const clearBtn = document.getElementById('b-clear'); let clearTimer = null;
+clearBtn.addEventListener('click', () => {
+  if (!clearBtn.classList.contains('armed')) {
+    clearBtn.classList.add('armed'); clearBtn.querySelector('span').textContent = 'Emin misiniz?';
+    clearTimeout(clearTimer); clearTimer = setTimeout(resetClear, 3000); return;
+  }
+  resetClear(); if (shapes.length) { pushHist(); shapes = []; letterIdx = 0; draw(); }
+});
+function resetClear(){ clearBtn.classList.remove('armed'); clearBtn.querySelector('span').textContent = 'Temizle'; }
+
+const degBtn = document.getElementById('b-deg');
+degBtn.addEventListener('click', () => {
+  showDeg = !showDeg;
+  degBtn.querySelector('span').textContent = showDeg ? 'Dereceleri Gizle' : 'Dereceleri Göster';
+  document.getElementById('deg-slash').setAttribute('opacity', showDeg ? '0' : '1');
+  degBtn.classList.toggle('on', !showDeg); draw();
+});
+const protBtn = document.getElementById('b-prot');
+protBtn.addEventListener('click', () => {
+  prot.on = !prot.on;
+  if (prot.on && !prot.placed) { prot.x = W / 2; prot.y = H * 0.68; prot.r = Math.max(110, Math.min(190, Math.min(W, H) * 0.32)); prot.rot = 0; prot.placed = true; }
+  protBtn.classList.toggle('on', prot.on); setTool(tool);
+});
+
+/* ---------- Güncelleme ---------- */
+const toastEl = document.getElementById('toast'); let toastTimer;
+function toast(html, ms = 3200){ toastEl.innerHTML = html; toastEl.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.hidden = true, ms); }
+const isApk = () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const newer = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
+document.getElementById('b-update').addEventListener('click', async () => {
+  toast('Güncelleme kontrol ediliyor…');
+  try {
+    const base = location.hostname.endsWith('github.io') ? './' : PAGES_URL;
+    const res = await fetch(base + 'version.json?t=' + Date.now(), { cache:'no-store' });
+    if (!res.ok) throw new Error();
+    const v = await res.json();
+    if (!newer(v.version, APP_VERSION)) { toast('Uygulama güncel ✓'); return; }
+    if (isApk()) {
+      toast(`Yeni sürüm var (${v.version}). <a href="${v.apk}" target="_blank" rel="noopener">APK'yı indir</a>`, 9000);
+      window.open(v.apk, '_blank');
+    } else {
+      toast('Yeni sürüm yükleniyor…');
+      if (location.hostname.endsWith('github.io')) location.replace(location.pathname + '?v=' + Date.now());
+      else window.open(PAGES_URL + '?v=' + Date.now(), '_blank');
+    }
+  } catch (err) { toast('Şu anda güncellemeye ulaşılamıyor. İnternet bağlantınızı kontrol edip tekrar deneyin.', 4500); }
+});
+
+/* ---------- Başlangıç ---------- */
+function resize(){
+  const r = stage.getBoundingClientRect(); W = r.width; H = r.height; DPR = window.devicePixelRatio || 1;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); cv.style.width = W + 'px'; cv.style.height = H + 'px'; draw();
+}
+window.addEventListener('resize', resize);
+resize();
+// Örnek: kesişen iki doğru (ters açılar aynı renkte görünür)
+(function seed(){
+  const cx = W / 2, cy = H / 2, k = Math.min(W, H) * 0.28;
+  shapes.push({ type:'line', a:newPoint(cx - k, cy + k * 0.35), b:newPoint(cx + k, cy - k * 0.35) });
+  shapes.push({ type:'line', a:newPoint(cx - k * 0.45, cy - k), b:newPoint(cx + k * 0.45, cy + k) });
+})();
+setTool('ray');
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
