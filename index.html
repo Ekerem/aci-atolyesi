@@ -47,6 +47,7 @@ body{background:var(--panel);color:var(--ink);font-family:var(--f-body);font-siz
 .hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);max-width:calc(100% - 32px);box-sizing:border-box;background:rgba(255,255,255,.88);border:1px solid var(--line);border-radius:999px;padding:7px 16px;font-size:13.5px;color:var(--ink);pointer-events:none;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .toast{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);text-align:center}
 .toast a{color:#bcd6ff}
+.rename{position:absolute;width:64px;height:34px;box-sizing:border-box;padding:0 8px;border:2px solid var(--accent);border-radius:9px;background:#fff;color:var(--ink);font:600 17px var(--f-display);text-align:center;outline:none;box-shadow:0 4px 14px rgba(36,50,74,.18);user-select:text;-webkit-user-select:text}
 .zoom{position:absolute;left:12px;bottom:12px;display:flex;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .zoom button{min-width:44px;height:40px;border:0;background:transparent;color:var(--ink);font:600 18px var(--f-body);cursor:pointer}
 .zoom button#z-reset{font-size:13px;min-width:58px;border-left:1px solid var(--line);border-right:1px solid var(--line);font-variant-numeric:tabular-nums}
@@ -81,6 +82,7 @@ body{background:var(--panel);color:var(--ink);font-family:var(--f-body);font-siz
       <button class="btn" id="t-circ" data-tool="circ"><svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="9.5" stroke="currentColor" stroke-width="2.2" fill="none"/><path d="M13 13 L21 8" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.2 2"/><circle cx="13" cy="13" r="2.4" fill="currentColor"/></svg>Çember</button>
       <button class="btn" id="t-perp" data-tool="perp"><svg viewBox="0 0 26 26"><path d="M3 21 H23 M13 21 V4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M13 16 H18 V21" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="13" cy="4" r="2.4" fill="currentColor"/></svg>Dikme</button>
       <button class="btn" id="t-par" data-tool="par"><svg viewBox="0 0 26 26"><path d="M3 12 L18 4 M8 22 L23 14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M9.5 7.6 l1.6 2.6 M14.5 17.6 l1.6 2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Paralel</button>
+      <button class="btn" id="t-int" data-tool="int"><svg viewBox="0 0 26 26"><path d="M3 20 L23 6 M4 6 L22 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="13" cy="13" r="3.6" fill="#fff" stroke="currentColor" stroke-width="2.2"/></svg>Kesiştir</button>
     </div>
 
     <div class="grp">
@@ -108,6 +110,7 @@ body{background:var(--panel);color:var(--ink);font-family:var(--f-body);font-siz
     <canvas id="cv"></canvas>
     <div class="hint" id="hint"></div>
     <div class="toast" id="toast" hidden></div>
+    <input id="rename" class="rename" type="text" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Nokta adı" hidden>
     <div class="zoom" role="group" aria-label="Yakınlaştırma">
       <button id="z-out" aria-label="Uzaklaştır">−</button>
       <button id="z-reset" aria-label="Görünümü sıfırla">100%</button>
@@ -118,7 +121,7 @@ body{background:var(--panel);color:var(--ink);font-family:var(--f-body);font-siz
 <div class="sig">Made by Us</div>
 
 <script>
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 const PAGES_URL = 'https://ekerem.github.io/aci-atolyesi/';
 document.getElementById('ver').textContent = 'Sürüm ' + APP_VERSION;
 
@@ -145,21 +148,32 @@ const HINTS = {
   seg:  'Doğru parçası: bir uçtan diğer uca sürükleyin.',
   line: 'Doğru: iki noktası arasında sürükleyin, iki yönde sonsuza uzar.',
   circ: 'Çember: merkezden basılı tutup dışarı doğru sürükleyin; bıraktığınız yer çemberin üzerindedir.',
-  move: 'Taşı: noktayı ya da çizgiyi sürükleyin; boş alanı sürükleyince sayfa kayar.',
+  move: 'Taşı: noktayı ya da çizgiyi sürükleyin. Adını değiştirmek için noktaya ya da harfine dokunun.',
+  int:  'Kesiştir: bir kesişim yerine dokunun ya da sırayla iki şekle dokunun; kesişim noktası adlandırılır.',
+  int2: 'Şimdi kesiştiği ikinci şekle dokunun.',
   del:  'Sil: silmek istediğiniz çizgiye dokunun.',
   perp: 'Dikme: önce bir çizgiye dokunun, sonra dikmenin çıkacağı noktaya dokunun.',
   par:  'Paralel: önce bir çizgiye dokunun, sonra paralelinin geçeceği yere dokunun.',
   place:'Şimdi yerleştirmek istediğiniz yere dokunun. Vazgeçmek için aracı yeniden seçin.'
 };
 let refShape = null, ghostAt = null;
+let marks = [];   // kesişim noktaları: { pt, s1, s2 } — şekiller hareket edince birlikte hareket eder
 
-function newPoint(x, y){ const i = letterIdx++; const n = LETTERS[i % LETTERS.length] + (i >= LETTERS.length ? Math.floor(i / LETTERS.length) : ''); return { x, y, name:n }; }
+function usedNames(){ return new Set(allPoints().map(p => p.name)); }
+function newPoint(x, y){
+  const used = usedNames(); let n;
+  do { const i = letterIdx++; n = LETTERS[i % LETTERS.length] + (i >= LETTERS.length ? Math.floor(i / LETTERS.length) : ''); } while (used.has(n));
+  return { x, y, name:n };
+}
 
 /* ---------- Geri al ---------- */
 function snapshot(){
   const pts = [], idx = new Map();
-  for (const s of shapes) for (const p of [s.a, s.b]) if (!idx.has(p)) { idx.set(p, pts.length); pts.push({x:p.x, y:p.y, name:p.name}); }
-  return JSON.stringify({ pts, sh: shapes.map(s => [s.type, idx.get(s.a), idx.get(s.b)]), letterIdx });
+  const add = p => { if (!idx.has(p)) { idx.set(p, pts.length); pts.push({ x:p.x, y:p.y, name:p.name, dep:!!p.dep }); } };
+  for (const s of shapes) { add(s.a); add(s.b); }
+  for (const m of marks) add(m.pt);
+  return JSON.stringify({ pts, sh: shapes.map(s => [s.type, idx.get(s.a), idx.get(s.b)]),
+    mk: marks.map(m => [idx.get(m.pt), shapes.indexOf(m.s1), shapes.indexOf(m.s2)]), letterIdx });
 }
 function pushHist(){ history.push(snapshot()); if (history.length > 60) history.shift(); }
 function undo(){
@@ -168,6 +182,7 @@ function undo(){
   const d = JSON.parse(history.pop());
   const pts = d.pts.map(p => ({...p}));
   shapes = d.sh.map(([type, a, b]) => ({ type, a:pts[a], b:pts[b] }));
+  marks = (d.mk || []).map(([p, a, b]) => ({ pt:pts[p], s1:shapes[a], s2:shapes[b] }));
   letterIdx = d.letterIdx; draw();
 }
 
@@ -222,6 +237,26 @@ function circleHits(){
     else if (isCirc(B)) out.push(...lineCircle(A, B));
   }
   return out;
+}
+function pairHits(A, B){
+  if (isCirc(A) && isCirc(B)) return circleCircle(A, B);
+  if (isCirc(A)) return lineCircle(B, A);
+  if (isCirc(B)) return lineCircle(A, B);
+  const p = intersect(A, B); return p ? [p] : [];
+}
+/* Kesişim noktalarını şekillerle birlikte güncelle; şekli silinen kesişimi serbest nokta yap ya da kaldır */
+function updateMarks(){
+  const used = new Set(); for (const s of shapes) { used.add(s.a); used.add(s.b); }
+  marks = marks.filter(m => {
+    if (shapes.includes(m.s1) && shapes.includes(m.s2)) return true;
+    m.pt.dep = false; m.pt.gone = false; return false;
+  });
+  for (const m of marks) {
+    const hs = pairHits(m.s1, m.s2);
+    if (!hs.length) { m.pt.gone = true; continue; }
+    let best = hs[0]; for (const h of hs) if (dist(h, m.pt) < dist(best, m.pt)) best = h;
+    m.pt.x = best.x; m.pt.y = best.y; m.pt.gone = false;
+  }
 }
 /* Işın ve doğrular tanımlayan noktalarını ve kesişimlerini kapsayacak kadar çizilir, ucunda ok olur */
 function extents(){
@@ -328,7 +363,7 @@ function hitProtHandle(p, r){ if (!prot.on) return null; const l = toProt(p), h 
 function inProt(p){ if (!prot.on) return false; const l = toProt(p); return l.y <= 6 && Math.hypot(l.x, l.y) <= prot.r + 6; }
 
 /* ---------- Yakalama (snap) ---------- */
-function allPoints(){ const s = new Set(); for (const sh of shapes) { s.add(sh.a); s.add(sh.b); } return [...s]; }
+function allPoints(){ const s = new Set(); for (const sh of shapes) { s.add(sh.a); s.add(sh.b); } for (const m of marks) if (!m.pt.gone) s.add(m.pt); return [...s]; }
 function snap(p, r, except){
   let best = null, bd = r;
   for (const q of allPoints()) { if (q === except) continue; const d = dist(p, q); if (d < bd) { bd = d; best = { x:q.x, y:q.y, pt:q }; } }
@@ -415,13 +450,14 @@ function drawLabels(angles){
   }
 }
 function drawPoint(p, hl){
-  ctx.beginPath(); ctx.arc(p.x, p.y, hl ? 7.5 : 5.5, 0, Math.PI * 2); ctx.fillStyle = hl ? '#2f6fd0' : '#fff'; ctx.fill();
+  ctx.beginPath(); ctx.arc(p.x, p.y, hl ? 7.5 : 5.5, 0, Math.PI * 2); ctx.fillStyle = hl ? '#2f6fd0' : p.dep ? '#24324a' : '#fff'; ctx.fill();
   ctx.lineWidth = 2.2; ctx.strokeStyle = '#24324a'; ctx.stroke();
   ctx.font = '600 15px Fredoka, Lexend, system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(227,234,242,0.95)'; ctx.strokeText(p.name, p.x + 9, p.y - 9);
   ctx.fillStyle = '#24324a'; ctx.fillText(p.name, p.x + 9, p.y - 9);
 }
 function draw(){
+  updateMarks();
   ctx.setTransform(DPR * view.s, 0, 0, DPR * view.s, DPR * view.ox, DPR * view.oy);
   drawGrid();
   const { angles } = computeAngles();
@@ -430,7 +466,7 @@ function draw(){
   for (const s of shapes) {
     let c = '#24324a', w = 2.6;
     if (hover && hover.shape === s) { if (tool === 'del') { c = '#d2483a'; w = 4.5; } else w = 4; }
-    if (s === refShape) { c = '#2f6fd0'; w = 4.5; }
+    if (s === refShape) { c = tool === 'int' ? '#e4572e' : '#2f6fd0'; w = 4.5; }
     strokeShape(s, c, w, ext);
   }
   if (drag && drag.kind === 'draw') strokeShape({ type:drag.type, a:drag.a, b:drag.b }, 'rgba(47,111,208,0.85)', 2.6);
@@ -489,6 +525,23 @@ function doPinch(){
   zLabel.textContent = Math.round(ns * 100) + '%'; draw();
 }
 function hitPoint(p, r){ let best = null, bd = r; for (const q of allPoints()) { const d = dist(p, q); if (d < bd) { bd = d; best = q; } } return best; }
+function hitLabel(p){
+  for (const q of allPoints()) { const w = 10 * q.name.length + 8;
+    if (p.x >= q.x + 4 && p.x <= q.x + 9 + w && p.y >= q.y - 27 && p.y <= q.y - 2) return q; }
+  return null;
+}
+/* Dokunulan yerdeki kesişimi bul */
+function hitIntersection(p, r){
+  let best = null, bd = r;
+  for (let i = 0; i < shapes.length; i++) for (let j = i + 1; j < shapes.length; j++)
+    for (const h of pairHits(shapes[i], shapes[j])) { const d = dist(p, h); if (d < bd) { bd = d; best = { x:h.x, y:h.y, s1:shapes[i], s2:shapes[j] }; } }
+  return best;
+}
+function addMark(x, y, s1, s2){
+  const ex = allPoints().find(q => dist(q, { x, y }) < 1.5);
+  if (ex) return ex;
+  const pt = newPoint(x, y); pt.dep = true; marks.push({ pt, s1, s2 }); return pt;
+}
 function hitShape(p, r, linOnly){ const ext = extents(); let best = null, bd = r;
   for (let i = shapes.length - 1; i >= 0; i--) { const s = shapes[i]; if (linOnly && isCirc(s)) continue;
     let d; if (isCirc(s)) d = distToShape(p, s); else { const [P, Q] = visEnds(s, ext); d = segDist(p, P, Q); }
@@ -515,8 +568,8 @@ cv.addEventListener('pointerdown', e => {
   const h = hitProtHandle(p, r);
   if (h) { drag = { kind:'prot-' + h, off:{ x:prot.x - p.x, y:prot.y - p.y } }; return; }
   if (tool === 'move') {
-    const q = hitPoint(p, r);
-    if (q) { pushHist(); drag = { kind:'pt', pt:q }; return; }
+    const q = hitPoint(p, r) || hitLabel(p);
+    if (q) { pushHist(); drag = { kind:'pt', pt:q, start:spos(e), moved:false, x0:q.x, y0:q.y }; return; }
     const s = hitShape(p, r);
     if (s) { pushHist(); drag = { kind:'shape', s, last:p }; return; }
     if (inProt(p)) { drag = { kind:'prot-move', off:{ x:prot.x - p.x, y:prot.y - p.y } }; return; }
@@ -525,6 +578,20 @@ cv.addEventListener('pointerdown', e => {
   if (tool === 'par' || tool === 'perp') {
     if (!refShape) { const s = hitShape(p, r, true); if (s) { refShape = s; hintEl.textContent = HINTS.place; draw(); } return; }
     drag = { kind:'place', at:p }; draw(); return;
+  }
+  if (tool === 'int') {
+    const hp = hitPoint(p, r) || hitLabel(p);
+    if (hp && !refShape) { startRename(hp); return; }
+    const hi = hitIntersection(p, r);
+    if (hi && !refShape) { pushHist(); const pt = addMark(hi.x, hi.y, hi.s1, hi.s2); draw(); toast(esc(pt.name) + ' kesişim noktası eklendi'); return; }
+    const s = hitShape(p, r);
+    if (!s) return;
+    if (!refShape) { refShape = s; hintEl.textContent = HINTS.int2; draw(); return; }
+    if (s === refShape) return;
+    const hs = pairHits(refShape, s);
+    if (!hs.length) toast('Bu iki şekil kesişmiyor.');
+    else { pushHist(); const names = hs.map(h => esc(addMark(h.x, h.y, refShape, s).name)); toast(names.join(' ve ') + (names.length > 1 ? ' kesişim noktaları' : ' kesişim noktası') + ' eklendi'); }
+    refShape = null; hintEl.textContent = HINTS.int; draw(); return;
   }
   if (tool === 'del') {
     const s = hitShape(p, r);
@@ -543,16 +610,16 @@ cv.addEventListener('pointermove', e => {
   const p = pos(e), r = (e.pointerType === 'mouse' ? 11 : 20) / view.s;
   if (!drag) {
     if (e.pointerType !== 'mouse') return;
-    if (refShape) { ghostAt = p; cv.style.cursor = 'crosshair'; draw(); return; }
+    if (refShape && tool !== 'int') { ghostAt = p; cv.style.cursor = 'crosshair'; draw(); return; }
     const h = hitProtHandle(p, r);
     let nh = null;
-    if (!h && (tool === 'move' || tool === 'del' || tool === 'par' || tool === 'perp')) {
-      const q = tool === 'move' ? hitPoint(p, r) : null;
+    if (!h && (tool === 'move' || tool === 'del' || tool === 'par' || tool === 'perp' || tool === 'int')) {
+      const q = tool === 'move' ? (hitPoint(p, r) || hitLabel(p)) : null;
       const lo = tool === 'par' || tool === 'perp', hs = hitShape(p, r, lo);
       nh = q ? { pt:q } : (hs ? { shape:hs } : null);
     }
     cv.style.cursor = h ? (h === 'rot' ? 'grab' : h === 'size' ? 'ew-resize' : 'move')
-      : tool === 'move' ? (nh ? 'grab' : inProt(p) ? 'move' : 'default') : (tool === 'del' || tool === 'par' || tool === 'perp') ? (nh ? 'pointer' : 'default') : 'crosshair';
+      : tool === 'move' ? (nh ? 'grab' : inProt(p) ? 'move' : 'default') : (tool === 'del' || tool === 'par' || tool === 'perp' || tool === 'int') ? (nh || (tool === 'int' && hitIntersection(p, r)) ? 'pointer' : 'default') : 'crosshair';
     const key = o => o ? (o.pt || o.shape) : null;
     if (key(nh) !== key(hover)) { hover = nh; draw(); }
     return;
@@ -564,10 +631,12 @@ cv.addEventListener('pointermove', e => {
     else { const sp = snap(p, r, drag.a); drag.b = { x:sp.x, y:sp.y }; drag.bPt = sp.pt || null; drag.liveDeg = null; }
     if (pd) drag.bPt = null;
   } else if (drag.kind === 'pt') {
+    if (!drag.moved) { const q = spos(e); if (dist(q, drag.start) < 6) return; drag.moved = true; }
+    if (drag.pt.dep) return;   // kesişim noktası şekillere bağlıdır, tek başına taşınmaz
     const sp = snap(p, r, drag.pt); drag.pt.x = sp.x; drag.pt.y = sp.y;
   } else if (drag.kind === 'shape') {
     const dx = p.x - drag.last.x, dy = p.y - drag.last.y;
-    for (const q of new Set([drag.s.a, drag.s.b])) { q.x += dx; q.y += dy; }
+    for (const q of new Set([drag.s.a, drag.s.b])) if (!q.dep) { q.x += dx; q.y += dy; }
     drag.last = p;
   } else if (drag.kind === 'prot-move') {
     const c = { x:p.x + drag.off.x, y:p.y + drag.off.y };
@@ -605,6 +674,8 @@ function endDrag(e){
       shapes.push({ type:g.type, a, b });
     }
     refShape = null; ghostAt = null; hintEl.textContent = HINTS[tool];
+  } else if (drag.kind === 'pt' && !drag.moved) {
+    history.pop(); const q = drag.pt; drag = null; startRename(q); draw(); return;
   } else if (drag.kind === 'pt') {
     // nokta başka bir noktanın üzerine bırakıldıysa birleştir
     const t = allPoints().find(q => q !== drag.pt && dist(q, drag.pt) < 1);
@@ -624,10 +695,30 @@ cv.addEventListener('pointercancel', onUp);
 cv.addEventListener('auxclick', e => e.preventDefault());
 cv.addEventListener('pointerleave', e => { if (!drag && (hover || ghostAt)) { hover = null; ghostAt = null; draw(); } });
 
+/* ---------- Ad değiştirme ---------- */
+const renameEl = document.getElementById('rename'); let renaming = null;
+function startRename(pt){
+  renaming = pt;
+  const sx = pt.x * view.s + view.ox, sy = pt.y * view.s + view.oy;
+  renameEl.style.left = Math.max(4, Math.min(W - 68, sx + 6)) + 'px';
+  renameEl.style.top = Math.max(4, Math.min(H - 38, sy - 44)) + 'px';
+  renameEl.value = pt.name; renameEl.hidden = false; renameEl.focus(); renameEl.select();
+}
+function finishRename(save){
+  if (!renaming) return;
+  const pt = renaming, v = renameEl.value.trim(); renaming = null; renameEl.hidden = true;
+  if (!save || !v || v === pt.name) { draw(); return; }
+  if (allPoints().some(q => q !== pt && q.name === v)) { toast('“' + esc(v) + '” adı başka bir noktada kullanılıyor.'); draw(); return; }
+  pushHist(); pt.name = v; draw();
+}
+renameEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); finishRename(true); } else if (e.key === 'Escape') finishRename(false); });
+renameEl.addEventListener('blur', () => finishRename(true));
+cv.addEventListener('dblclick', e => { const p = pos(e), q = hitPoint(p, 11 / view.s) || hitLabel(p); if (q) { drag = null; startRename(q); } });
+
 /* ---------- Menü ---------- */
 const hintEl = document.getElementById('hint');
 function setTool(t){
-  tool = t; hover = null; refShape = null; ghostAt = null;
+  finishRename(true); tool = t; hover = null; refShape = null; ghostAt = null;
   document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
   hintEl.textContent = HINTS[t] + (prot.on && ['ray','seg','line'].includes(t) ? ' Açıölçerin merkezinden başlarsanız tam derece ile çizilir.' : '');
   cv.style.cursor = ['ray','seg','line'].includes(t) ? 'crosshair' : 'default';
@@ -642,7 +733,7 @@ clearBtn.addEventListener('click', () => {
     clearBtn.classList.add('armed'); clearBtn.querySelector('span').textContent = 'Emin misiniz?';
     clearTimeout(clearTimer); clearTimer = setTimeout(resetClear, 3000); return;
   }
-  resetClear(); refShape = null; if (shapes.length) { pushHist(); shapes = []; letterIdx = 0; draw(); }
+  resetClear(); refShape = null; if (shapes.length) { pushHist(); shapes = []; marks = []; letterIdx = 0; draw(); }
 });
 function resetClear(){ clearBtn.classList.remove('armed'); clearBtn.querySelector('span').textContent = 'Temizle'; }
 
@@ -662,6 +753,7 @@ protBtn.addEventListener('click', () => {
 
 /* ---------- Güncelleme ---------- */
 const toastEl = document.getElementById('toast'); let toastTimer;
+const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
 function toast(html, ms = 3200){ toastEl.innerHTML = html; toastEl.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.hidden = true, ms); }
 const isApk = () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const newer = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };

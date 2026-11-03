@@ -6,6 +6,8 @@
 ## Ne yapar?
 - **Işın, doğru parçası, doğru** çizilir; ışın ve doğruların sonsuzluğu uçlarındaki okla gösterilir. Uç noktalar otomatik harflendirilir (A, B, C…).
 - **Çember**: merkezden dışarı sürükleyerek çizilir; çemberin üzerine ve kesişimlerine noktalar yapışır, merkezden çizilen yarıçaplar arasındaki merkez açı otomatik gösterilir.
+- **Kesiştir**: bir kesişim yerine ya da sırayla iki şekle dokunulur; kesişim noktası adlandırılır ve şekiller hareket edince onlarla birlikte hareket eder.
+- **Ad değiştirme**: Taşı modunda bir noktaya ya da harfine dokunup (her modda çift tıklayıp) yeni adı yazın.
 - **Dikme ve Paralel**: önce bir çizgiye, sonra yerleştirilecek noktaya dokunulur; dikme ya da paralel otomatik çizilir.
 - Kesişen çizgiler arasındaki **açılar otomatik gösterilir**; **eş açılar aynı renktedir**, dik açılar kare işaretlidir.
 - **Dereceleri Gizle**: renkler kalır, sayılar gizlenir; öğrenciler açıölçerle kendileri ölçer.
