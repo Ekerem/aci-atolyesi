@@ -1,6 +1,6 @@
 {
   "name": "aci-atolyesi",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "private": true,
   "description": "5. sınıf açı kazanımları için ışın, doğru parçası ve doğru çizim uygulaması",
   "scripts": {

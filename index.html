@@ -121,7 +121,7 @@ body{background:var(--panel);color:var(--ink);font-family:var(--f-body);font-siz
 <div class="sig">Made by Us</div>
 
 <script>
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.4.1';
 const PAGES_URL = 'https://ekerem.github.io/aci-atolyesi/';
 document.getElementById('ver').textContent = 'Sürüm ' + APP_VERSION;
 
@@ -765,14 +765,13 @@ document.getElementById('b-update').addEventListener('click', async () => {
     if (!res.ok) throw new Error();
     const v = await res.json();
     if (!newer(v.version, APP_VERSION)) { toast('Uygulama güncel ✓'); return; }
-    if (isApk()) {
-      toast(`Yeni sürüm var (${v.version}). <a href="${v.apk}" target="_blank" rel="noopener">APK'yı indir</a>`, 9000);
-      window.open(v.apk, '_blank');
-    } else {
-      toast('Yeni sürüm yükleniyor…');
-      if (location.hostname.endsWith('github.io')) location.replace(location.pathname + '?v=' + Date.now());
-      else window.open(PAGES_URL + '?v=' + Date.now(), '_blank');
-    }
+    // APK, uygulamayı GitHub Pages'ten açar; yeni APK indirmeye gerek yok, sayfayı yeni sürümle yeniden yüklemek yeterli
+    toast('Yeni sürüm yükleniyor…');
+    try { if (window.caches) for (const k of await caches.keys()) await caches.delete(k); } catch (_) {}
+    const fresh = '?v=' + Date.now();
+    if (location.hostname.endsWith('github.io')) location.replace(location.pathname + fresh);
+    else if (isApk()) location.replace(PAGES_URL + fresh);
+    else window.open(PAGES_URL + fresh, '_blank');
   } catch (err) { toast('Şu anda güncellemeye ulaşılamıyor. İnternet bağlantınızı kontrol edip tekrar deneyin.', 4500); }
 });
 
