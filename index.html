@@ -28,12 +28,12 @@ html,body{height:100%;margin:0}
 body{background:var(--panel);color:var(--ink);font-family:var(--f-body);font-size:14px;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 .app{display:flex;height:100%;
   padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);box-sizing:border-box}
-.side{width:212px;flex:none;display:flex;flex-direction:column;gap:14px;padding:16px 12px;box-sizing:border-box;border-right:1px solid var(--line);background:var(--panel);overflow-y:auto}
+.side{width:212px;flex:none;display:flex;flex-direction:column;gap:10px;padding:14px 12px;box-sizing:border-box;border-right:1px solid var(--line);background:var(--panel);overflow-y:auto}
 .brand{font-family:var(--f-display);font-weight:600;font-size:22px;line-height:1.1;padding:2px 6px 4px;display:flex;align-items:center;gap:8px}
 .brand svg{flex:none}
-.grp{display:flex;flex-direction:column;gap:6px}
+.grp{display:flex;flex-direction:column;gap:3px}
 .grp h2{margin:0;padding:0 6px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.btn{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:8px 10px;border:1.5px solid transparent;border-radius:10px;background:transparent;color:var(--ink);font:500 15px var(--f-body);text-align:left;cursor:pointer}
+.btn{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:6px 10px;border:1.5px solid transparent;border-radius:10px;background:transparent;color:var(--ink);font:500 15px var(--f-body);text-align:left;cursor:pointer}
 .btn svg{flex:none;width:26px;height:26px}
 .btn:hover{background:#eaf0f7}
 .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -78,6 +78,7 @@ body{background:var(--panel);color:var(--ink);font-family:var(--f-body);font-siz
       <button class="btn" id="t-ray" data-tool="ray"><svg viewBox="0 0 26 26"><circle cx="4" cy="20" r="2.6" fill="currentColor"/><path d="M4 20 L23 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M23 6 l-6.2 .8 M23 6 l-2.6 5.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Işın</button>
       <button class="btn" id="t-seg" data-tool="seg"><svg viewBox="0 0 26 26"><path d="M4 20 L22 6" stroke="currentColor" stroke-width="2.2"/><circle cx="4" cy="20" r="2.6" fill="currentColor"/><circle cx="22" cy="6" r="2.6" fill="currentColor"/></svg>Doğru Parçası</button>
       <button class="btn" id="t-line" data-tool="line"><svg viewBox="0 0 26 26"><path d="M3 21 L23 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M23 5 l-6.2 .8 M23 5 l-2.6 5.6 M3 21 l6.2 -.8 M3 21 l2.6 -5.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="9.5" cy="15.8" r="2.2" fill="currentColor"/><circle cx="16.5" cy="10.2" r="2.2" fill="currentColor"/></svg>Doğru</button>
+      <button class="btn" id="t-circ" data-tool="circ"><svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="9.5" stroke="currentColor" stroke-width="2.2" fill="none"/><path d="M13 13 L21 8" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.2 2"/><circle cx="13" cy="13" r="2.4" fill="currentColor"/></svg>Çember</button>
       <button class="btn" id="t-perp" data-tool="perp"><svg viewBox="0 0 26 26"><path d="M3 21 H23 M13 21 V4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M13 16 H18 V21" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="13" cy="4" r="2.4" fill="currentColor"/></svg>Dikme</button>
       <button class="btn" id="t-par" data-tool="par"><svg viewBox="0 0 26 26"><path d="M3 12 L18 4 M8 22 L23 14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M9.5 7.6 l1.6 2.6 M14.5 17.6 l1.6 2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Paralel</button>
     </div>
@@ -117,7 +118,7 @@ body{background:var(--panel);color:var(--ink);font-family:var(--f-body);font-siz
 <div class="sig">Made by Us</div>
 
 <script>
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 const PAGES_URL = 'https://ekerem.github.io/aci-atolyesi/';
 document.getElementById('ver').textContent = 'Sürüm ' + APP_VERSION;
 
@@ -143,6 +144,7 @@ const HINTS = {
   ray:  'Işın: başlangıç noktasından basılı tutup sürükleyin.',
   seg:  'Doğru parçası: bir uçtan diğer uca sürükleyin.',
   line: 'Doğru: iki noktası arasında sürükleyin, iki yönde sonsuza uzar.',
+  circ: 'Çember: merkezden basılı tutup dışarı doğru sürükleyin; bıraktığınız yer çemberin üzerindedir.',
   move: 'Taşı: noktayı ya da çizgiyi sürükleyin; boş alanı sürükleyince sayfa kayar.',
   del:  'Sil: silmek istediğiniz çizgiye dokunun.',
   perp: 'Dikme: önce bir çizgiye dokunun, sonra dikmenin çıkacağı noktaya dokunun.',
@@ -175,21 +177,51 @@ const cross = (p, q) => p.x * q.y - p.y * q.x;
 const dot = (p, q) => p.x * q.x + p.y * q.y;
 const dist = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
 
+const isCirc = s => s.type === 'circ';
+const radius = c => dist(c.a, c.b);
 function tRange(s){ const L = dist(s.a, s.b) || 1, e = 1.5 / L;
   return s.type === 'seg' ? [-e, 1 + e] : s.type === 'ray' ? [-e, Infinity] : [-Infinity, Infinity]; }
 function distToShape(p, s){
+  if (isCirc(s)) return Math.abs(dist(p, s.a) - radius(s));
   const d = sub(s.b, s.a), L2 = dot(d, d) || 1;
   let t = dot(sub(p, s.a), d) / L2;
   if (s.type === 'seg') t = Math.max(0, Math.min(1, t)); else if (s.type === 'ray') t = Math.max(0, t);
   return dist(p, { x:s.a.x + d.x * t, y:s.a.y + d.y * t });
 }
 function intersect(s1, s2){
+  if (isCirc(s1) || isCirc(s2)) return null;
   const d1 = sub(s1.b, s1.a), d2 = sub(s2.b, s2.a), den = cross(d1, d2);
   if (Math.abs(den) < 1e-6 * Math.hypot(d1.x, d1.y) * Math.hypot(d2.x, d2.y)) return null;
   const w = sub(s2.a, s1.a), t = cross(w, d2) / den, u = cross(w, d1) / den;
   const r1 = tRange(s1), r2 = tRange(s2);
   if (t < r1[0] || t > r1[1] || u < r2[0] || u > r2[1]) return null;
   return { x:s1.a.x + d1.x * t, y:s1.a.y + d1.y * t, t, u };
+}
+/* Çemberle kesişimler: doğru-çember ve çember-çember */
+function lineCircle(s, c){
+  const d = sub(s.b, s.a), f = sub(s.a, c.a), A = dot(d, d), B = 2 * dot(f, d), C = dot(f, f) - radius(c) ** 2;
+  const D = B * B - 4 * A * C; if (A < 1e-9 || D < 0) return [];
+  const r = tRange(s), out = [];
+  for (const t of D < 1e-9 ? [-B / (2 * A)] : [(-B - Math.sqrt(D)) / (2 * A), (-B + Math.sqrt(D)) / (2 * A)])
+    if (t >= r[0] && t <= r[1]) out.push({ x:s.a.x + d.x * t, y:s.a.y + d.y * t, t });
+  return out;
+}
+function circleCircle(c1, c2){
+  const r1 = radius(c1), r2 = radius(c2), d = dist(c1.a, c2.a);
+  if (d < 1e-6 || d > r1 + r2 + 1e-6 || d < Math.abs(r1 - r2) - 1e-6) return [];
+  const a = (r1 * r1 - r2 * r2 + d * d) / (2 * d), h = Math.sqrt(Math.max(0, r1 * r1 - a * a));
+  const ux = (c2.a.x - c1.a.x) / d, uy = (c2.a.y - c1.a.y) / d, mx = c1.a.x + ux * a, my = c1.a.y + uy * a;
+  return h < 1e-6 ? [{ x:mx, y:my }] : [{ x:mx - uy * h, y:my + ux * h }, { x:mx + uy * h, y:my - ux * h }];
+}
+function circleHits(){
+  const out = [];
+  for (let i = 0; i < shapes.length; i++) for (let j = i + 1; j < shapes.length; j++) {
+    const A = shapes[i], B = shapes[j];
+    if (isCirc(A) && isCirc(B)) out.push(...circleCircle(A, B));
+    else if (isCirc(A)) out.push(...lineCircle(B, A));
+    else if (isCirc(B)) out.push(...lineCircle(A, B));
+  }
+  return out;
 }
 /* Işın ve doğrular tanımlayan noktalarını ve kesişimlerini kapsayacak kadar çizilir, ucunda ok olur */
 function extents(){
@@ -201,6 +233,8 @@ function extents(){
     r1[0] = Math.min(r1[0], p.t); r1[1] = Math.max(r1[1], p.t);
     r2[0] = Math.min(r2[0], p.u); r2[1] = Math.max(r2[1], p.u);
   }
+  for (const s of shapes) if (!isCirc(s)) for (const c of shapes) if (isCirc(c))
+    for (const p of lineCircle(s, c)) { const r = m.get(s); r[0] = Math.min(r[0], p.t); r[1] = Math.max(r[1], p.t); }
   return m;
 }
 const ARROW_GAP = 42;
@@ -223,7 +257,7 @@ function computeAngles(){
   for (const P of clusters) {
     const rays = [];
     for (const s of shapes) {
-      if (distToShape(P, s) > 2.5) continue;
+      if (isCirc(s) || distToShape(P, s) > 2.5) continue;
       const d = sub(s.b, s.a), L = Math.hypot(d.x, d.y); if (L < 1) continue;
       const ux = d.x / L, uy = d.y / L, fromA = dot(sub(P, s.a), d) / L;
       const fwd = s.type !== 'seg' || L - fromA > 2;
@@ -299,8 +333,14 @@ function snap(p, r, except){
   let best = null, bd = r;
   for (const q of allPoints()) { if (q === except) continue; const d = dist(p, q); if (d < bd) { bd = d; best = { x:q.x, y:q.y, pt:q }; } }
   if (best) return best;
-  for (const c of computeAngles().clusters) { const d = dist(p, c); if (d < bd) { bd = d; best = { x:c.x, y:c.y }; } }
+  for (const c of [...computeAngles().clusters, ...circleHits()]) { const d = dist(p, c); if (d < bd) { bd = d; best = { x:c.x, y:c.y }; } }
   if (prot.on) { const d = dist(p, prot); if (d < bd) best = { x:prot.x, y:prot.y, center:true }; }
+  if (best) return best;
+  // çemberin üzerine yapıştır
+  for (const c of shapes) if (isCirc(c) && c.a !== except && c.b !== except) {
+    const d = dist(p, c.a), R = radius(c);
+    if (d > 1 && Math.abs(d - R) < bd) { bd = Math.abs(d - R); best = { x:c.a.x + (p.x - c.a.x) * R / d, y:c.a.y + (p.y - c.a.y) * R / d }; }
+  }
   return best || { x:p.x, y:p.y };
 }
 /* Açıölçer merkezinden çizilen ışını tam dereceye yerleştir */
@@ -320,6 +360,13 @@ function arrowHead(E, ux, uy, color, w){
   ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
 }
 function strokeShape(s, color, w, ext, dash){
+  if (isCirc(s)) {
+    ctx.save(); if (dash) ctx.setLineDash([9, 7]);
+    ctx.beginPath(); ctx.arc(s.a.x, s.a.y, radius(s), 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(47,111,208,0.05)'; ctx.fill();
+    ctx.strokeStyle = color; ctx.lineWidth = w; ctx.stroke(); ctx.restore();
+    return;
+  }
   const [p, q] = visEnds(s, ext);
   ctx.save(); if (dash) ctx.setLineDash([9, 7]);
   ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.stroke();
@@ -442,7 +489,11 @@ function doPinch(){
   zLabel.textContent = Math.round(ns * 100) + '%'; draw();
 }
 function hitPoint(p, r){ let best = null, bd = r; for (const q of allPoints()) { const d = dist(p, q); if (d < bd) { bd = d; best = q; } } return best; }
-function hitShape(p, r){ const ext = extents(); let best = null, bd = r; for (let i = shapes.length - 1; i >= 0; i--) { const [P, Q] = visEnds(shapes[i], ext); const d = segDist(p, P, Q); if (d < bd) { bd = d; best = shapes[i]; } } return best; }
+function hitShape(p, r, linOnly){ const ext = extents(); let best = null, bd = r;
+  for (let i = shapes.length - 1; i >= 0; i--) { const s = shapes[i]; if (linOnly && isCirc(s)) continue;
+    let d; if (isCirc(s)) d = distToShape(p, s); else { const [P, Q] = visEnds(s, ext); d = segDist(p, P, Q); }
+    if (d < bd) { bd = d; best = s; } }
+  return best; }
 /* Seçili çizgiye göre paralel ya da dikme oluştur */
 function buildRel(ref, p, r){
   const sp = snap(p, r), A = { x:sp.x, y:sp.y };
@@ -472,7 +523,7 @@ cv.addEventListener('pointerdown', e => {
     drag = { kind:'pan', last:spos(e) }; cv.style.cursor = 'grabbing'; return;
   }
   if (tool === 'par' || tool === 'perp') {
-    if (!refShape) { const s = hitShape(p, r); if (s) { refShape = s; hintEl.textContent = HINTS.place; draw(); } return; }
+    if (!refShape) { const s = hitShape(p, r, true); if (s) { refShape = s; hintEl.textContent = HINTS.place; draw(); } return; }
     drag = { kind:'place', at:p }; draw(); return;
   }
   if (tool === 'del') {
@@ -497,7 +548,8 @@ cv.addEventListener('pointermove', e => {
     let nh = null;
     if (!h && (tool === 'move' || tool === 'del' || tool === 'par' || tool === 'perp')) {
       const q = tool === 'move' ? hitPoint(p, r) : null;
-      nh = q ? { pt:q } : (hitShape(p, r) ? { shape:hitShape(p, r) } : null);
+      const lo = tool === 'par' || tool === 'perp', hs = hitShape(p, r, lo);
+      nh = q ? { pt:q } : (hs ? { shape:hs } : null);
     }
     cv.style.cursor = h ? (h === 'rot' ? 'grab' : h === 'size' ? 'ew-resize' : 'move')
       : tool === 'move' ? (nh ? 'grab' : inProt(p) ? 'move' : 'default') : (tool === 'del' || tool === 'par' || tool === 'perp') ? (nh ? 'pointer' : 'default') : 'crosshair';
@@ -507,7 +559,7 @@ cv.addEventListener('pointermove', e => {
   }
   if (drag.kind === 'place') { drag.at = p; }
   else if (drag.kind === 'draw') {
-    const pd = protDegreeSnap(drag.a, p);
+    const pd = drag.type === 'circ' ? null : protDegreeSnap(drag.a, p);
     if (pd) { drag.b = { x:pd.x, y:pd.y }; drag.liveDeg = pd.deg; }
     else { const sp = snap(p, r, drag.a); drag.b = { x:sp.x, y:sp.y }; drag.bPt = sp.pt || null; drag.liveDeg = null; }
     if (pd) drag.bPt = null;
@@ -526,7 +578,7 @@ cv.addEventListener('pointermove', e => {
     let a = Math.atan2(p.y - prot.y, p.x - prot.x) + Math.PI / 2;
     const cands = [];
     for (let k = 0; k < 24; k++) cands.push(k * Math.PI / 12);
-    for (const s of shapes) if (distToShape(prot, s) < 1.5) { const d = sub(s.b, s.a), t = Math.atan2(d.y, d.x); cands.push(t, t + Math.PI); }
+    for (const s of shapes) if (!isCirc(s) && distToShape(prot, s) < 1.5) { const d = sub(s.b, s.a), t = Math.atan2(d.y, d.x); cands.push(t, t + Math.PI); }
     const tol = 3 * Math.PI / 180;
     for (const c of cands) { let df = Math.atan2(Math.sin(a - c), Math.cos(a - c)); if (Math.abs(df) < tol) { a = c; break; } }
     prot.rot = a;
