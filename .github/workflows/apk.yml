@@ -19,7 +19,9 @@ jobs:
         with: { distribution: temurin, java-version: 17 }
       - run: npm install
       - run: npm run build:www
-      - run: npx cap add android && npx cap sync android
+      - run: npx cap add android
+      - run: npx @capacitor/assets generate --android --iconBackgroundColor "#2f6fd0" --splashBackgroundColor "#e3eaf2"
+      - run: npx cap sync android
       - run: cd android && ./gradlew assembleDebug
       - run: cp android/app/build/outputs/apk/debug/app-debug.apk aci-atolyesi.apk
       - uses: softprops/action-gh-release@v2

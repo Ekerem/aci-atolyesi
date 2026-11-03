@@ -1,14 +1,17 @@
 {
   "name": "aci-atolyesi",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "private": true,
   "description": "5. sınıf açı kazanımları için ışın, doğru parçası ve doğru çizim uygulaması",
   "scripts": {
-    "build:www": "rm -rf www && mkdir www && cp index.html sw.js version.json www/"
+    "build:www": "rm -rf www && mkdir www && cp -r index.html sw.js version.json manifest.json icons www/"
   },
   "dependencies": {
     "@capacitor/android": "^6.1.2",
     "@capacitor/cli": "^6.1.2",
     "@capacitor/core": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5"
   }
 }
